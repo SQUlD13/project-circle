@@ -1,0 +1,11 @@
+.git
+.gitignore
+terraform/
+terragrunt/
+argocd/
+.github/
+scripts/
+docs/
+*.md
+.terraform/
+.terragrunt-cache/

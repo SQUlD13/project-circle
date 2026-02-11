@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Circle</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 { color: #667eea; }
+        .badges span {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            margin: 0.3rem;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Project Circle</h1>
+        <p>EKS Infrastructure Demo</p>
+        <div class="badges">
+            <span>EKS</span>
+            <span>Terragrunt</span>
+            <span>ArgoCD</span>
+            <span>External Secrets</span>
+        </div>
+    </div>
+</body>
+</html>

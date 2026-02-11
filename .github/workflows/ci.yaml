@@ -1,0 +1,91 @@
+name: CI - Build and Push
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "Dockerfile"
+      - "helm/generic-app/**"
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: eu-west-1
+  ECR_REPOSITORY: project-circle-nginx
+
+jobs:
+  lint-and-test:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Helm lint
+        run: helm lint helm/generic-app
+
+      - name: Helm template (dev)
+        run: helm template test helm/generic-app -f helm/generic-app/envs/values-dev.yaml
+
+      - name: Helm template (staging)
+        run: helm template test helm/generic-app -f helm/generic-app/envs/values-staging.yaml
+
+      - name: Helm template (prod)
+        run: helm template test helm/generic-app -f helm/generic-app/envs/values-prod.yaml
+
+  build-and-push:
+    name: Build & Push Image
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update dev values
+        env:
+          IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
+        run: |
+          sed -i "s|tag: \"dev-.*\"|tag: \"$IMAGE_TAG\"|" helm/generic-app/envs/values-dev.yaml
+          sed -i "s|tag: \"staging-.*\"|tag: \"$IMAGE_TAG\"|" helm/generic-app/envs/values-staging.yaml
+
+      - name: Commit updated tags
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add helm/generic-app/envs/values-dev.yaml helm/generic-app/envs/values-staging.yaml
+          git diff --cached --quiet || git commit -m "ci: update dev/staging image tag to ${GITHUB_SHA::7}"
+          git push
