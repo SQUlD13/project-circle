@@ -70,12 +70,32 @@ VPC → EKS → AWS LB Controller → Ingress NGINX → ArgoCD
 
 ## Prerequisites
 
-- AWS CLI v2 (configured with credentials for account `530424100135`)
+- AWS CLI v2 (configured with credentials for account `530424100135`, or update `terragrunt/project.hcl`)
 - Terraform >= 1.5
 - Terragrunt >= 0.55
 - kubectl
 - Helm 3
-- GitHub CLI (`gh`) - for deploy key management
+- GitHub CLI (`gh`) - authenticated via `gh auth login` for repo operations
+- Docker - for building images locally
+
+## Customizing for Your Environment
+
+Edit `terragrunt/project.hcl` to customize project-wide values:
+
+```hcl
+locals {
+  project_name   = "my-project"        # Change this
+  aws_account_id = "123456789012"      # Change to your AWS account
+  github_repo    = "myorg/my-project"  # Change to your GitHub repo
+  git_repo_url   = "git@github.com:myorg/my-project.git"
+}
+```
+
+These values are used everywhere:
+- Terraform modules (via Terragrunt)
+- Helm charts (global.projectName, global.awsAccountId)
+- GitHub Actions (github_repo in OIDC trust policy)
+- Resource naming (all resources prefixed with `${project_name}`)
 
 ## Getting Started
 
@@ -172,12 +192,32 @@ AWS Secrets Manager → External Secrets Operator (IRSA) → K8s Secret → Pod
 3. `ExternalSecret` (deployed by ArgoCD via Helm) maps AWS secret properties to K8s Secret keys
 4. ESO syncs automatically, refreshing every hour
 
-## CI/CD Flow
+## CI/CD Flow — GitHub Actions OIDC
 
-1. Push to `main` triggers GitHub Actions
-2. Docker image is built and pushed to ECR (tagged with commit SHA)
-3. Image tag is updated in environment value files
-4. ArgoCD detects the change and syncs automatically
+1. Push to `main` triggers GitHub Actions (`.github/workflows/ci.yaml`)
+2. GitHub Actions requests a signed JWT from `https://token.actions.githubusercontent.com`
+3. Workflow calls `aws-actions/configure-aws-credentials@v4` with:
+   - `role-to-assume`: `${{ secrets.AWS_ROLE_ARN }}` (stored in GitHub Secrets)
+   - Role trust policy validates JWT claims (repo, branch, audience)
+   - AWS STS returns temporary credentials (no long-lived secrets)
+4. Docker image is built and pushed to ECR (tagged with commit SHA)
+5. Image tag is updated in `helm/generic-app/envs/values-dev.yaml`
+6. Commit is pushed, triggering ArgoCD sync
+7. ArgoCD detects the change and syncs automatically
+
+### Setting Up GitHub Actions OIDC
+
+After deploying the `github-oidc` Terraform module, set the role ARN as a GitHub Secret:
+
+```bash
+# Get the role ARN from Terraform output
+ROLE_ARN=$(cd terragrunt/dev/eu-west-1/github-oidc && terragrunt output -raw role_arn)
+
+# Add to GitHub Secrets (requires gh CLI authenticated)
+gh secret set AWS_ROLE_ARN --body "$ROLE_ARN"
+```
+
+This enables the CI workflow to authenticate to AWS **without storing long-lived credentials** in GitHub.
 
 ## Helm Chart
 
@@ -198,6 +238,11 @@ helm install my-app helm/generic-app -n dev -f helm/generic-app/envs/values-dev.
 ## Teardown
 
 ```bash
+# Configuration (from terragrunt/project.hcl)
+PROJECT="project-circle"
+ACCOUNT_ID="530424100135"
+AWS_REGION="eu-west-1"
+
 # Delete ArgoCD applications first (cleans up managed resources)
 kubectl delete -f argocd/apps/
 
@@ -206,17 +251,20 @@ cd terragrunt/dev/eu-west-1
 terragrunt run-all destroy
 
 # Clean up bootstrap resources
-aws s3 rm s3://project-circle-terraform-state-530424100135 --recursive
+BUCKET="${PROJECT}-terraform-state-${ACCOUNT_ID}"
+TABLE="${PROJECT}-terraform-locks"
+
+aws s3 rm "s3://${BUCKET}" --recursive
 # Delete all object versions (required for versioned buckets)
-aws s3api list-object-versions --bucket project-circle-terraform-state-530424100135 \
+aws s3api list-object-versions --bucket "$BUCKET" \
   --query 'Versions[].{Key:Key,VersionId:VersionId}' --output text | \
   while read key vid; do
-    aws s3api delete-object --bucket project-circle-terraform-state-530424100135 \
+    aws s3api delete-object --bucket "$BUCKET" \
       --key "$key" --version-id "$vid"
   done
-aws s3 rb s3://project-circle-terraform-state-530424100135
-aws dynamodb delete-table --table-name project-circle-terraform-locks --region eu-west-1
-aws ecr delete-repository --repository-name project-circle-nginx --region eu-west-1 --force
+aws s3 rb "s3://${BUCKET}"
+aws dynamodb delete-table --table-name "$TABLE" --region "$AWS_REGION"
+aws ecr delete-repository --repository-name "${PROJECT}-nginx" --region "$AWS_REGION" --force
 ```
 
 ## Cost Estimate (Dev)

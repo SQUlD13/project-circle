@@ -21,6 +21,11 @@ variable "git_ssh_private_key" {
   default     = ""
 }
 
+variable "project_name" {
+  description = "Project name for resource naming"
+  type        = string
+}
+
 variable "tags" {
   description = "Additional tags"
   type        = map(string)

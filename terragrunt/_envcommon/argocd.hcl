@@ -1,5 +1,6 @@
 locals {
-  env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  env_vars     = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  project_vars = read_terragrunt_config(find_in_parent_folders("project.hcl"))
 
   environment = local.env_vars.locals.environment
 }
@@ -48,9 +49,10 @@ EOF
 
 inputs = {
   cluster_name  = dependency.eks.outputs.cluster_name
-  argocd_domain = "argocd-${local.environment}.project-circle.example.com"
+  project_name  = local.project_vars.locals.project_name
+  argocd_domain = "argocd-${local.environment}.${local.project_vars.locals.base_domain}"
 
-  git_repo_url        = "git@github.com:SQUlD13/project-circle.git"
+  git_repo_url        = local.project_vars.locals.git_repo_url
   git_ssh_private_key = file("${get_repo_root()}/.keys/argocd-deploy-key")
 
   tags = {

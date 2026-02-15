@@ -1,11 +1,12 @@
 locals {
-  region_vars = read_terragrunt_config(find_in_parent_folders("region.hcl"))
-  env_vars    = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  region_vars  = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  env_vars     = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  project_vars = read_terragrunt_config("${get_repo_root()}/terragrunt/project.hcl")
 
   aws_region     = local.region_vars.locals.aws_region
   environment    = local.env_vars.locals.environment
-  aws_account_id = "530424100135"
-  project_name   = "project-circle"
+  aws_account_id = local.project_vars.locals.aws_account_id
+  project_name   = local.project_vars.locals.project_name
 }
 
 generate "provider" {

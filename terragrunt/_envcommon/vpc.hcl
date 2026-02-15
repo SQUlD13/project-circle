@@ -1,8 +1,10 @@
 locals {
-  env_vars    = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-  region_vars = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  env_vars     = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  region_vars  = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  project_vars = read_terragrunt_config(find_in_parent_folders("project.hcl"))
 
   environment        = local.env_vars.locals.environment
+  project_name       = local.project_vars.locals.project_name
   vpc_cidr           = local.env_vars.locals.vpc_cidr
   availability_zones = local.region_vars.locals.availability_zones
 }
@@ -12,7 +14,7 @@ terraform {
 }
 
 inputs = {
-  vpc_name           = "project-circle-${local.environment}"
+  vpc_name           = "${local.project_name}-${local.environment}"
   vpc_cidr           = local.vpc_cidr
   availability_zones = local.availability_zones
   single_nat_gateway = local.environment == "dev" ? true : false
@@ -29,7 +31,7 @@ inputs = {
     cidrsubnet(local.vpc_cidr, 4, 5),
   ]
 
-  cluster_name = "project-circle-${local.environment}"
+  cluster_name = "${local.project_name}-${local.environment}"
   environment  = local.environment
 
   tags = {

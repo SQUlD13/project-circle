@@ -4,7 +4,6 @@ global:
 replicaCount: 3
 
 image:
-  repository: 530424100135.dkr.ecr.eu-west-1.amazonaws.com/project-circle-nginx
   tag: "prod-latest"
 
 ingress:
@@ -23,13 +22,6 @@ resources:
 
 externalSecret:
   enabled: true
-  secretStore: aws-secrets-manager
-  refreshInterval: 1h
-  target:
-    name: app-secrets
-    creationPolicy: Owner
   data:
     - secretKey: EXAMPLE_SECRET
-      remoteRef:
-        key: project-circle-prod/app/config
-        property: example_secret
+      property: example_secret

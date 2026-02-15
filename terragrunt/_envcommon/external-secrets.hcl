@@ -1,10 +1,11 @@
 locals {
-  env_vars    = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-  region_vars = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  env_vars     = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  region_vars  = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  project_vars = read_terragrunt_config(find_in_parent_folders("project.hcl"))
 
   environment    = local.env_vars.locals.environment
   aws_region     = local.region_vars.locals.aws_region
-  aws_account_id = "530424100135"
+  aws_account_id = local.project_vars.locals.aws_account_id
 }
 
 terraform {
@@ -19,6 +20,11 @@ dependency "eks" {
     oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/mock"
     cluster_certificate_authority_data = "bW9jaw=="
   }
+}
+
+dependency "aws_lb_controller" {
+  config_path  = "${get_terragrunt_dir()}/../aws-lb-controller"
+  skip_outputs = true
 }
 
 generate "k8s_helm_provider" {

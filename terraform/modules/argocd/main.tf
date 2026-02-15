@@ -71,7 +71,7 @@ resource "kubernetes_secret_v1" "argocd_repo" {
   count = var.git_repo_url != "" ? 1 : 0
 
   metadata {
-    name      = "repo-project-circle"
+    name      = "repo-${var.project_name}"
     namespace = kubernetes_namespace_v1.argocd.metadata[0].name
     labels = {
       "argocd.argoproj.io/secret-type" = "repository"

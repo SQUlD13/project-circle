@@ -79,8 +79,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
         run: |
-          sed -i "s|tag: \"dev-.*\"|tag: \"$IMAGE_TAG\"|" helm/generic-app/envs/values-dev.yaml
-          sed -i "s|tag: \"staging-.*\"|tag: \"$IMAGE_TAG\"|" helm/generic-app/envs/values-staging.yaml
+          sed -i 's|tag: "[^"]*"|tag: "'"$IMAGE_TAG"'"|' helm/generic-app/envs/values-dev.yaml
+          sed -i 's|tag: "[^"]*"|tag: "'"$IMAGE_TAG"'"|' helm/generic-app/envs/values-staging.yaml
 
       - name: Commit updated tags
         run: |

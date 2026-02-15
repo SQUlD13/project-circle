@@ -1,7 +1,9 @@
 locals {
-  env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  env_vars     = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  project_vars = read_terragrunt_config(find_in_parent_folders("project.hcl"))
 
   environment     = local.env_vars.locals.environment
+  project_name    = local.project_vars.locals.project_name
   cluster_version = local.env_vars.locals.eks_cluster_version
   node_groups     = local.env_vars.locals.node_groups
 }
@@ -20,7 +22,7 @@ dependency "vpc" {
 }
 
 inputs = {
-  cluster_name    = "project-circle-${local.environment}"
+  cluster_name    = "${local.project_name}-${local.environment}"
   cluster_version = local.cluster_version
   vpc_id          = dependency.vpc.outputs.vpc_id
   private_subnets = dependency.vpc.outputs.private_subnets

@@ -1,12 +1,15 @@
 global:
-  environment: dev
+  environment: ""
+  projectName: project-circle
+  awsAccountId: "530424100135"
+  awsRegion: eu-west-1
 
-replicaCount: 2
+replicaCount: 1
 
 image:
-  repository: nginx
+  repository: project-circle-nginx
   pullPolicy: IfNotPresent
-  tag: "1.27-alpine"
+  tag: "latest"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -69,6 +72,7 @@ externalSecret:
   enabled: false
   secretStore: aws-secrets-manager
   refreshInterval: 1h
+  secretBasePath: app/config
   target:
     name: app-secrets
     creationPolicy: Owner
