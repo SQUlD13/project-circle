@@ -2,7 +2,7 @@ global:
   environment: staging
 
 image:
-  tag: "staging-latest"
+  tag: "c02a641829d9b5779db43f42ea90ad45d6e50041"
 
 ingress:
   annotations:
