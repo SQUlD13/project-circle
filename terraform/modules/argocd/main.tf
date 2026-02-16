@@ -36,10 +36,13 @@ resource "helm_release" "argocd" {
         }
         ingress = {
           enabled          = true
-          ingressClassName = "nginx"
+          ingressClassName = "alb"
           annotations = {
-            "nginx.ingress.kubernetes.io/force-ssl-redirect" = "false"
-            "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTP"
+            "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
+            "alb.ingress.kubernetes.io/target-type"      = "ip"
+            "alb.ingress.kubernetes.io/group.name"       = var.project_name
+            "alb.ingress.kubernetes.io/group.order"      = "1"
+            "alb.ingress.kubernetes.io/healthcheck-path" = "/healthz"
           }
           hosts = [var.argocd_domain]
         }

@@ -7,6 +7,8 @@ image:
   tag: "prod-latest"
 
 ingress:
+  annotations:
+    alb.ingress.kubernetes.io/group.order: "100"
   hosts:
     - paths:
         - path: /

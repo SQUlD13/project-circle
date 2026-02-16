@@ -144,8 +144,8 @@ echo ""
 echo "Cluster:  $CLUSTER_NAME"
 echo "Region:   $AWS_REGION"
 
-NLB=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
-echo "NLB:      $NLB"
+ALB=$(kubectl get ingress -A -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "provisioning")
+echo "ALB:      $ALB"
 
 echo ""
 echo "Useful commands:"

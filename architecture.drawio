@@ -22,7 +22,7 @@
                 <mxCell id="public_subnets" value="Public Subnets (3 AZs)" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;strokeColor=#7AA116;fillColor=#F2F6E8;verticalAlign=top;align=left;spacingLeft=30;spacingTop=5;dashed=0;" parent="1" vertex="1">
                     <mxGeometry x="80" y="210" width="860" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="nlb" value="Network&#xa;Load Balancer&#xa;(internet-facing)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.network_load_balancer;" parent="1" vertex="1">
+                <mxCell id="nlb" value="Application&#xa;Load Balancer&#xa;(internet-facing)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.application_load_balancer;" parent="1" vertex="1">
                     <mxGeometry x="370" y="235" width="50" height="50" as="geometry"/>
                 </mxCell>
                 <mxCell id="nat_gw" value="NAT&#xa;Gateway" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.nat_gateway;" parent="1" vertex="1">
@@ -48,12 +48,6 @@
                 </mxCell>
                 <mxCell id="kubeproxy" value="kube-proxy" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="315" y="480" width="30" height="40" as="geometry"/>
-                </mxCell>
-                <mxCell id="ns_ingress" value="ingress-nginx" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;spacingTop=5;" parent="1" vertex="1">
-                    <mxGeometry x="380" y="440" width="160" height="130" as="geometry"/>
-                </mxCell>
-                <mxCell id="nginx_ctrl" value="Ingress NGINX&#xa;Controller" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" parent="1" vertex="1">
-                    <mxGeometry x="400" y="480" width="110" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="ns_argocd" value="argocd" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;spacingTop=5;" parent="1" vertex="1">
                     <mxGeometry x="560" y="440" width="170" height="130" as="geometry"/>
@@ -139,18 +133,15 @@
                 <mxCell id="arr_igw_nlb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#333333;strokeWidth=2;" parent="1" source="igw" target="nlb" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="arr_nlb_nginx" value="TCP 80/443" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=9;fontColor=#82b366;" parent="1" source="nlb" target="nginx_ctrl" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="arr_nginx_dev" value="/dev/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;fontSize=9;fontColor=#82b366;dashed=1;" parent="1" source="nginx_ctrl" target="dev_pod1" edge="1">
+                <mxCell id="arr_alb_dev" value="/dev/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=9;fontColor=#82b366;" parent="1" source="nlb" target="dev_pod1" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="455" y="540"/>
+                            <mxPoint x="395" y="540"/>
                             <mxPoint x="175" y="540"/>
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="arr_nginx_staging" value="/staging/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;fontSize=9;fontColor=#82b366;dashed=1;" parent="1" source="nginx_ctrl" target="staging_pod1" edge="1">
+                <mxCell id="arr_alb_staging" value="/staging/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=9;fontColor=#82b366;" parent="1" source="nlb" target="staging_pod1" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="arr_alb_nlb" value="manages" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=1;fontSize=9;fontColor=#6c8ebf;dashed=1;" parent="1" source="alb_ctrl" target="nlb" edge="1">
@@ -199,7 +190,7 @@
                 <mxCell id="arr_nat_out" value="outbound&#xa;traffic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#666666;strokeWidth=1;fontSize=8;fontColor=#666666;dashed=1;" parent="1" source="nat_gw" target="igw" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="legend" value="Traffic Flow:&#xa;Internet → NLB → Ingress NGINX → /dev/* or /staging/* → App Pods" style="text;html=1;fontSize=11;align=left;fontColor=#333333;fontStyle=1;verticalAlign=top;spacingTop=5;spacingLeft=5;rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#cccccc;" parent="1" vertex="1">
+                <mxCell id="legend" value="Traffic Flow:&#xa;Internet → ALB → /dev/* or /staging/* → App Pods" style="text;html=1;fontSize=11;align=left;fontColor=#333333;fontStyle=1;verticalAlign=top;spacingTop=5;spacingLeft=5;rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#cccccc;" parent="1" vertex="1">
                     <mxGeometry x="40" y="940" width="480" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="legend2" value="IaC: Terragrunt → Terraform modules → AWS resources&#xa;GitOps: GitHub → ArgoCD → Helm chart → Kubernetes resources" style="text;html=1;fontSize=11;align=left;fontColor=#333333;fontStyle=0;verticalAlign=top;spacingTop=5;spacingLeft=5;rounded=1;whiteSpace=wrap;fillColor=#f5f5f5;strokeColor=#cccccc;" parent="1" vertex="1">

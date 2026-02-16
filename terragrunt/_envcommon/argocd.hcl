@@ -18,8 +18,8 @@ dependency "eks" {
   }
 }
 
-dependency "ingress_nginx" {
-  config_path  = "${get_terragrunt_dir()}/../ingress-nginx"
+dependency "aws_lb_controller" {
+  config_path  = "${get_terragrunt_dir()}/../aws-lb-controller"
   skip_outputs = true
 }
 
