@@ -2,7 +2,7 @@ global:
   environment: staging
 
 image:
-  tag: "8b87ec12c12c8960a39d6fa12bfa376454b9b783"
+  tag: "da0b70dfa5049db74ac74f19f30d502da23a50ee"
 
 ingress:
   annotations:
