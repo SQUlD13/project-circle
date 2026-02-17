@@ -2,7 +2,7 @@ global:
   environment: dev
 
 image:
-  tag: "edd9ec764c808710a0d5d3302c2bef9fbaad7437"
+  tag: "8b87ec12c12c8960a39d6fa12bfa376454b9b783"
 
 ingress:
   annotations:
