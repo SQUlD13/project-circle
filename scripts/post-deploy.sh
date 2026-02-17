@@ -39,23 +39,59 @@ echo "Waiting for nodes to be ready..."
 kubectl wait --for=condition=Ready nodes --all --timeout=300s
 echo "[OK] All nodes ready"
 
-# 2. Clean up any Secrets Manager secrets scheduled for deletion (re-deploy safety)
+# 2. Clean up Secrets Manager secrets scheduled for deletion (re-deploy safety)
 echo ""
 echo "--- Checking Secrets Manager ---"
-SECRET_NAME="${CLUSTER_NAME}/app/config"
-SECRET_STATUS=$(aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region "$AWS_REGION" --query 'DeletedDate' --output text 2>/dev/null || echo "NOT_FOUND")
+SECRETS_DIR="$PROJECT_ROOT/.secrets"
 
-if [ "$SECRET_STATUS" != "None" ] && [ "$SECRET_STATUS" != "NOT_FOUND" ]; then
-  echo "Secret '$SECRET_NAME' is scheduled for deletion, force-deleting..."
-  aws secretsmanager delete-secret \
-    --secret-id "$SECRET_NAME" \
-    --force-delete-without-recovery \
-    --region "$AWS_REGION" >/dev/null
-  echo "[OK] Secret force-deleted (Terraform will recreate it)"
-  sleep 5
+# Determine which namespaces this cluster hosts
+if [ "$ENVIRONMENT" = "dev" ]; then
+  NAMESPACES="dev staging"
 else
-  echo "[OK] No secret cleanup needed"
+  NAMESPACES="$ENVIRONMENT"
 fi
+
+for NS in $NAMESPACES; do
+  SECRET_NAME="${PROJECT}-${NS}/app/config"
+  SECRET_STATUS=$(aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region "$AWS_REGION" --query 'DeletedDate' --output text 2>/dev/null || echo "NOT_FOUND")
+
+  if [ "$SECRET_STATUS" != "None" ] && [ "$SECRET_STATUS" != "NOT_FOUND" ]; then
+    echo "Secret '$SECRET_NAME' is scheduled for deletion, force-deleting..."
+    aws secretsmanager delete-secret \
+      --secret-id "$SECRET_NAME" \
+      --force-delete-without-recovery \
+      --region "$AWS_REGION" >/dev/null
+    echo "[OK] Secret force-deleted (Terraform will recreate it)"
+    sleep 5
+  fi
+done
+echo "[OK] Secrets Manager cleanup complete"
+
+# 2b. Provision secrets from .secrets/ directory
+echo ""
+echo "--- Provisioning secrets ---"
+for NS in $NAMESPACES; do
+  NS_DIR="$SECRETS_DIR/$NS"
+  if [ ! -d "$NS_DIR" ]; then
+    echo "[SKIP] No .secrets/$NS/ directory found"
+    continue
+  fi
+
+  for SECRET_FILE in "$NS_DIR"/*.json; do
+    [ -f "$SECRET_FILE" ] || continue
+    # Convert filename: app-config.json → app/config
+    BASENAME=$(basename "$SECRET_FILE" .json)
+    SECRET_PATH=$(echo "$BASENAME" | sed 's/-/\//g')
+    SECRET_NAME="${PROJECT}-${NS}/${SECRET_PATH}"
+
+    echo "  Pushing $SECRET_NAME from .secrets/$NS/$(basename "$SECRET_FILE")"
+    aws secretsmanager put-secret-value \
+      --secret-id "$SECRET_NAME" \
+      --secret-string "$(cat "$SECRET_FILE")" \
+      --region "$AWS_REGION" >/dev/null
+  done
+  echo "[OK] Secrets provisioned for $NS"
+done
 
 # 3. Set GitHub Actions OIDC secret
 echo ""

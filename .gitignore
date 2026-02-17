@@ -17,6 +17,10 @@ crash.log
 # Deploy keys
 .keys/
 
+# Secrets (actual values - only .example files are committed)
+.secrets/**/*.json
+!.secrets/**/*.json.example
+
 # IDE
 .vscode/
 .idea/
