@@ -24,8 +24,8 @@ variable "project_name" {
 }
 
 variable "secrets" {
-  description = "Namespace-keyed secrets: namespace → path → JSON string value"
-  type        = map(map(string))
+  description = "Namespace-keyed secret paths: namespace → list of secret paths to create in AWS Secrets Manager"
+  type        = map(list(string))
   default     = {}
 }
 

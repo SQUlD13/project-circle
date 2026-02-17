@@ -1,11 +1,10 @@
 locals {
-  # Flatten namespace-keyed secrets into a flat map: "project-name-namespace/path" → json_data
-  flat_secrets = merge([
-    for ns, paths in var.secrets : {
-      for path, data in paths :
-      "${var.project_name}-${ns}/${path}" => data
-    }
-  ]...)
+  # Flatten namespace-keyed paths into a set: "project-name-namespace/path"
+  secret_names = toset(flatten([
+    for ns, paths in var.secrets : [
+      for path in paths : "${var.project_name}-${ns}/${path}"
+    ]
+  ]))
 }
 
 module "external_secrets_irsa" {
@@ -71,15 +70,15 @@ resource "helm_release" "external_secrets" {
 }
 
 resource "aws_secretsmanager_secret" "this" {
-  for_each = local.flat_secrets
-  name     = each.key
+  for_each = local.secret_names
+  name     = each.value
   tags     = var.tags
 }
 
 resource "aws_secretsmanager_secret_version" "this" {
-  for_each      = local.flat_secrets
-  secret_id     = aws_secretsmanager_secret.this[each.key].id
-  secret_string = each.value
+  for_each      = local.secret_names
+  secret_id     = aws_secretsmanager_secret.this[each.value].id
+  secret_string = "{}"
 }
 
 resource "time_sleep" "wait_for_crds" {

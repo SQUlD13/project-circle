@@ -3,12 +3,8 @@ locals {
   vpc_cidr    = "10.0.0.0/16"
 
   secrets = {
-    dev = {
-      "app/config" = jsonencode({ example_secret = "change-me-in-aws-console" })
-    }
-    staging = {
-      "app/config" = jsonencode({ example_secret = "change-me-in-aws-console" })
-    }
+    dev     = ["app/config"]
+    staging = ["app/config"]
   }
 
   eks_cluster_version = "1.32"
