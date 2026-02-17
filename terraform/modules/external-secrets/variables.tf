@@ -18,9 +18,14 @@ variable "aws_account_id" {
   type        = string
 }
 
+variable "project_name" {
+  description = "Project name used as prefix for secret names in AWS Secrets Manager"
+  type        = string
+}
+
 variable "secrets" {
-  description = "Map of secret names to their JSON string values to create in AWS Secrets Manager"
-  type        = map(string)
+  description = "Namespace-keyed secrets: namespace → path → JSON string value"
+  type        = map(map(string))
   default     = {}
 }
 

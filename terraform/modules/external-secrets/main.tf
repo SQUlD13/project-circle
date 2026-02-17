@@ -1,3 +1,13 @@
+locals {
+  # Flatten namespace-keyed secrets into a flat map: "project-name-namespace/path" → json_data
+  flat_secrets = merge([
+    for ns, paths in var.secrets : {
+      for path, data in paths :
+      "${var.project_name}-${ns}/${path}" => data
+    }
+  ]...)
+}
+
 module "external_secrets_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.39"
@@ -31,7 +41,7 @@ resource "aws_iam_policy" "external_secrets" {
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret"
         ]
-        Resource = "arn:aws:secretsmanager:${var.region}:${var.aws_account_id}:secret:${var.cluster_name}/*"
+        Resource = [for ns in keys(var.secrets) : "arn:aws:secretsmanager:${var.region}:${var.aws_account_id}:secret:${var.project_name}-${ns}/*"]
       }
     ]
   })
@@ -61,13 +71,13 @@ resource "helm_release" "external_secrets" {
 }
 
 resource "aws_secretsmanager_secret" "this" {
-  for_each = var.secrets
+  for_each = local.flat_secrets
   name     = each.key
   tags     = var.tags
 }
 
 resource "aws_secretsmanager_secret_version" "this" {
-  for_each      = var.secrets
+  for_each      = local.flat_secrets
   secret_id     = aws_secretsmanager_secret.this[each.key].id
   secret_string = each.value
 }

@@ -60,15 +60,12 @@ EOF
 
 inputs = {
   cluster_name      = dependency.eks.outputs.cluster_name
+  project_name      = local.project_vars.locals.project_name
   oidc_provider_arn = dependency.eks.outputs.oidc_provider_arn
   region            = local.aws_region
   aws_account_id    = local.aws_account_id
 
-  secrets = {
-    "${dependency.eks.outputs.cluster_name}/app/config" = jsonencode({
-      example_secret = "change-me-in-aws-console"
-    })
-  }
+  secrets = local.env_vars.locals.secrets
 
   tags = {
     Component = "external-secrets"
