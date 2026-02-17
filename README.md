@@ -81,8 +81,63 @@ locals {
 │   └── dev/eu-west-1/            # Environment module instances
 ├── helm/generic-app/             # Helm chart + per-env value overrides
 ├── argocd/apps/                  # ArgoCD Application manifests
+├── .secrets/                     # Secret values (gitignored, see below)
+│   ├── dev/
+│   │   └── app-config.json.example
+│   ├── staging/
+│   │   └── app-config.json.example
+│   └── prod/
+│       └── app-config.json.example
 └── .github/workflows/ci.yaml    # CI pipeline
 ```
+
+## Secrets Management
+
+Application secrets are managed via AWS Secrets Manager with a three-phase flow:
+
+**1. Infrastructure Setup (Terraform)**
+- Creates empty secret shells in AWS Secrets Manager (e.g., `project-circle-dev/app/config`)
+- IAM role grants pod access via ExternalSecrets Operator
+
+**2. Secret Provisioning (`post-deploy.sh`)**
+- Reads `.secrets/{namespace}/*.json` files from local disk
+- Converts filenames: `app-config.json` → `app/config` (dashes become slashes)
+- Pushes values to AWS Secrets Manager: `project-circle-{namespace}/{secret-path}`
+
+**3. Application Sync (ExternalSecrets + Helm)**
+- ExternalSecrets watches AWS Secrets Manager and creates Kubernetes Secrets
+- Helm values define which keys each app expects: `externalSecret.data[i].property` (e.g., `example_secret`)
+- App reads Kubernetes Secret mounted as volume
+
+### Secret File Convention
+
+Store secrets in `.secrets/{namespace}/` with JSON files matching the AWS Secrets Manager structure:
+
+```bash
+.secrets/
+├── dev/
+│   └── app-config.json           # Syncs to "project-circle-dev/app/config"
+├── staging/
+│   └── app-config.json           # Syncs to "project-circle-staging/app/config"
+└── prod/
+    └── app-config.json           # Syncs to "project-circle-prod/app/config"
+```
+
+**Filename Format:**
+- Use lowercase, dash-separated names: `app-config.json` → path `app/config`
+- Each JSON file contains keys the app expects (defined in Helm values)
+- Example (`.secrets/dev/app-config.json`):
+  ```json
+  {
+    "example_secret": "dev-value",
+    "api_key": "dev-api-key-xyz"
+  }
+  ```
+
+**Git Convention:**
+- Commit `.json.example` files showing structure (gitignored example above)
+- Actual `.json` files are gitignored (contain real values, never committed)
+- On re-deploy, `post-deploy.sh` reads actual `.json` files and provisions to AWS
 
 ## ArgoCD UI
 
