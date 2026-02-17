@@ -6,10 +6,10 @@ image:
 
 ingress:
   annotations:
-    alb.ingress.kubernetes.io/group.order: "10"
+    alb.ingress.kubernetes.io/group.order: "100"
   hosts:
     - paths:
-        - path: /dev
+        - path: /
           pathType: Prefix
 
 resources:

@@ -6,7 +6,7 @@ image:
 
 ingress:
   annotations:
-    alb.ingress.kubernetes.io/group.order: "20"
+    alb.ingress.kubernetes.io/group.order: "10"
   hosts:
     - paths:
         - path: /staging
